@@ -123,14 +123,40 @@ const getEmployeeDetails = async (req, res) => {
     try {
         const employee = await User.findById(id)
             .populate('department', 'name')
-            .populate('courses') // Assuming you have a courses relationship
-            .populate('skills'); // Assuming you have a skills relationship
+            .populate('designation')
+            .populate('courses') 
+            .populate('skills');
+
         if (!employee) return res.status(404).json({ message: 'Employee not found' });
+
         res.status(200).json(employee);
     } catch (error) {
+        console.error('Error fetching employee details:', error); // Log the error for debugging
         res.status(500).json({ message: error.message });
     }
 };
+
+// Admin: Approve Certification
+const approveCertification = async (req, res) => {
+    const { courseId } = req.params;
+    
+    try {
+      const user = await User.findOne({ "courses.courseId": courseId });
+      if (!user) return res.status(404).json({ message: 'User or course not found' });
+  
+      const course = user.courses.find(course => course.courseId.toString() === courseId);
+      course.isVerified = true;
+      user.calculatePoints();
+      await user.save();
+  
+      return res.status(200).json({ message: 'Course certification approved' });
+    } catch (error) {
+      console.error('Error approving certification:', error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
+  };
+  
+
 
 module.exports = {
     getDepartments,
@@ -140,5 +166,6 @@ module.exports = {
     editRole, 
     getAllEmployees,
     getEmployeeProgress,
-    getEmployeeDetails
+    getEmployeeDetails,
+    approveCertification
 };

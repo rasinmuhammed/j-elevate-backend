@@ -43,9 +43,9 @@ fs.createReadStream(csvFilePath)
         course: row.course,
         skills: skills, // Use the parsed skills
         rating: parseFloat(row.rating) || 0,
-        reviewcount: parseInt(row.reviewcount.replace(/,/g, ''), 10) || 0, // Handle commas
+        reviewCount: parseInt(row.reviewCount, 10) || 0, // Handle commas
         level: row.level,
-        certificatetype: row.certificatetype,
+        certificateType: row['certificatetype'],
         duration: row.duration,
         crediteligibility: row.crediteligibility === 'TRUE',
       };

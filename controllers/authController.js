@@ -7,35 +7,35 @@ exports.loginController = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    // Check if the user exists
     const user = await User.findOne({ email });
+
     if (!user) {
       return res.status(401).json({ message: 'Invalid Email' });
     }
 
-    // Check if password is correct
     const isMatch = await bcrypt.compare(password, user.password);
-
-    console.log('Input Password:', password);
-    console.log('Stored Hashed Password:', user.password);
-    console.log('Password Match:', isMatch);
-
     if (!isMatch) {
-      return res.status(401).json({ message: 'Invalid password' });
+      return res.status(401).json({ message: 'Invalid Password' });
     }
 
     // Create JWT token
     const token = createJWTToken(user._id, user.role);
 
-    // Send token in a secure cookie
+    // Send token and role in the response
     res.cookie('token', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // Ensure secure cookies in production
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'Strict',
       maxAge: 3600000, // 1 hour
     });
 
-    res.status(200).json({ message: 'Login successful' });
+    // Send the role along with the token in the response
+    res.status(200).json({
+      message: 'Login successful',
+      token: token,
+      role: user.role, // Include the role in the response
+      id: user._id
+    });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
