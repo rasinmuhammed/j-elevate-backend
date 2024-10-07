@@ -4,8 +4,11 @@ const connectDB = require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const userRoutes = require('./routes/userRoutes.js');
+const certificationRoutes = require('./routes/certificationRoutes.js');
 const cors = require('cors'); // Import CORS middleware
 const cookieParser = require('cookie-parser');
+const Certification = require('./models/Certification.js');
+const statisticsRoute = require('./routes/statistics');
 
 dotenv.config(); // Load environment variables
 
@@ -23,9 +26,12 @@ app.use(cors({
 connectDB();
 
 // Use authentication routes
+// Use authentication routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/user', userRoutes);
+app.use('/api/statistics', statisticsRoute);
+
 
 
 // Start the server

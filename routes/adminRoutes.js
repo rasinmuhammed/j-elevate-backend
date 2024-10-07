@@ -18,6 +18,7 @@ const {
 const { authenticateJWT, isAdmin } = require('../middleware/authMiddleware');
 const Department = require('../models/Department'); 
 const Skill = require('../models/Skill');
+const Certification = require('../models/Certification')
 // course routes
 const { getAllCourses, addCourse, updateCourse, deleteCourse } = require('../controllers/courseController');
 
@@ -187,44 +188,25 @@ router.delete('/skills/:id', async (req, res) => {
   }
 });
 
+// Fetch pending requests
 router.get('/pending-requests', async (req, res) => {
   try {
-    console.log('Received request for pending requests.');
-
-    // Fetch users whose courses have a completionDate set but isVerified is false
     const pendingRequests = await User.find({
       'courses.completionDate': { $ne: null },
       'courses.isVerified': false,
-    }).populate('courses.courseId'); // Populate courseId for course details
+    }).populate('courses.courseId');
 
-    console.log('Pending requests fetched:', pendingRequests);
-
-    // Check if any users were found
-    if (!pendingRequests.length) {
-      console.log('No pending requests found.');
-    }
-
-    // Extract relevant info from users
     const requests = pendingRequests.flatMap(user => {
-      console.log(`Processing user: ${user.firstName} ${user.lastName}`);
-
-      const userRequests = user.courses
+      return user.courses
         .filter(course => course.completionDate && !course.isVerified)
-        .map(course => {
-          console.log(`Found course for certification: ${course.courseId.course}, Score: ${course.score}`);
-          return {
-            _id: course._id,
-            employee: { name: `${user.firstName} ${user.lastName}` },
-            certificationName: course.courseId.course,
-            score: course.score,
-          };
-        });
-
-      console.log(`Requests for user ${user.firstName} ${user.lastName}:`, userRequests);
-      return userRequests;
+        .map(course => ({
+          _id: course._id,
+          employee: { name: `${user.firstName} ${user.lastName}` },
+          certificationName: course.courseId.course,
+          score: course.score,
+        }));
     });
 
-    console.log('Final list of requests:', requests);
     res.json(requests);
   } catch (error) {
     console.error('Error fetching pending requests:', error);
@@ -232,27 +214,45 @@ router.get('/pending-requests', async (req, res) => {
   }
 });
 
-
 // Approve or reject certification
 router.post('/approve-certification', async (req, res) => {
   const { requestId, approve } = req.body;
 
   try {
-    // Find the user and update the corresponding course
-    const user = await User.findOneAndUpdate(
-      { 'courses._id': requestId },
-      { $set: { 'courses.$.isVerified': approve } },
-      { new: true }
-    );
+      // Find the user request using requestId
+      const userRequest = await User.findOne({ "courses._id": requestId });
 
-    if (!user) {
-      return res.status(404).json({ message: 'Request not found' });
-    }
+      if (!userRequest) {
+          return res.status(404).json({ message: 'Request not found' });
+      }
 
-    res.status(200).json({ message: 'Request updated successfully' });
+      const course = userRequest.courses.id(requestId); // Get the course using requestId
+      if (!course) {
+          return res.status(404).json({ message: 'Course not found for this request' });
+      }
+
+      // Update the course's isVerified status
+      course.isVerified = true; // Update the course's isVerified based on approval
+
+      // Create a new certification regardless of approval status
+      const newCertification = new Certification({
+          userId: userRequest._id,
+          courseId: course.courseId, // Assuming you have the courseId in the course object
+          completionDate: course.completionDate, 
+          isApproved: approve // Set isVerified based on approval
+      });
+
+      // Save the new certification
+      await newCertification.save();
+
+      // Save the user request changes
+      await userRequest.save(); 
+
+      // Send response
+      res.status(200).json({ message: 'Certification request processed successfully' });
   } catch (error) {
-    console.error('Error approving certification:', error);
-    res.status(500).json({ message: 'Server error' });
+      console.error('Error approving certification:', error);
+      res.status(500).json({ message: 'Server error' });
   }
 });
 

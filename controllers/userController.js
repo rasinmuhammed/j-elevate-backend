@@ -157,21 +157,31 @@ exports.getLearningBucket = async (req, res) => {
   // Get user skills by department
   exports.getSkillsByDepartment = async (req, res) => {
     try {
-      const userId = req.user.id; // Get user ID from decoded token
-      const user = await User.findById(userId).populate('department'); // Assuming department is a reference in User model
+        const userId = req.user.id; // Get user ID from decoded token
+        const user = await User.findById(userId).populate('department'); // Assuming department is a reference in User model
   
-      if (!user || !user.department) {
-        return res.status(404).json({ message: 'User or department not found' });
-      }
+        if (!user || !user.department) {
+            return res.status(404).json({ message: 'User or department not found' });
+        }
   
-      const skills = await Skill.find({ department: user.department._id }); // Fetch skills for the user's department
-      res.status(200).json(skills); // Return skills as a response
+        // Fetch skills for the user's department and populate the department name
+        const skills = await Skill.find({ department: user.department._id }).populate('department', 'name');
+  
+        // Format skills to include department name
+        const formattedSkills = skills.map(skill => ({
+            id: skill._id,
+            name: skill.name,
+            description: skill.description,
+            level: skill.level,
+            departmentName: user.department.name // Add department name
+        }));
+
+        res.status(200).json(formattedSkills); // Return formatted skills as a response
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Internal server error' });
+        console.error(error);
+        res.status(500).json({ message: 'Internal server error' });
     }
-  };
-  
+};
 
 // Get user skills
 exports.getUserSkills = async (req, res) => {
@@ -246,28 +256,31 @@ exports.getVerifiedCourses = async (req, res) => {
 
   exports.getUserProfile = async (req, res) => {
     try {
-      const userId = req.user.id; // Get user ID from the token payload
-      const user = await User.findById(userId).select('-password'); // Fetch the user and exclude the password
-  
-      if (!user) {
-        return res.status(404).json({ message: 'User not found' });
-      }
-  
-      // Send user data back to client
-      res.status(200).json({
-        firstName: user.firstName,
-        lastName: user.lastName,
-        employeeID: user.employeeID,
-        points: user.points,
-        designation: user.designation,
-    
-    
-      });
+        const userId = req.user.id; // Get user ID from the token payload
+        // Populate the department field to get the department details
+        const user = await User.findById(userId)
+            .populate('department', 'name') // Specify the fields you want from the department
+            .select('-password'); // Exclude the password
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Check if department exists and send user data back to client
+        res.status(200).json({
+            firstName: user.firstName,
+            lastName: user.lastName,
+            department: user.department ? user.department.name : null, // Safely access department name
+            employeeID: user.employeeID,
+            points: user.points,
+            designation: user.designation,
+        });
     } catch (error) {
-      console.error('Error fetching user profile:', error);
-      res.status(500).json({ message: 'Server error' });
+        console.error('Error fetching user profile:', error);
+        res.status(500).json({ message: 'Server error' });
     }
-  };
+};
+
 
   // Get user skills
 exports.getUserSkills = async (req, res) => {
@@ -285,3 +298,5 @@ exports.getUserSkills = async (req, res) => {
     }
   };
   
+
+
