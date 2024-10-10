@@ -36,7 +36,7 @@ const userSchema = new mongoose.Schema({
     },
     type: { // Define the type of course taken
       type: String,
-      enum: ['Specialization', 'Professional', 'Guided Project', 'Course'],
+      enum: [' Specialization ', ' Professional ', ' Guided Project ', ' Course '],
       required: true,
     },
     progress: {

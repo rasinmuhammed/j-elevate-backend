@@ -1,6 +1,7 @@
 const User = require('../models/User'); // Import the User model
 const Skill = require('../models/Skill');
 const Course = require('../models/Course');
+const { PythonShell } = require('python-shell');
 
 // Add a course to the learning bucket
 exports.addCourseToLearningBucket = async (req, res) => {
@@ -9,7 +10,7 @@ exports.addCourseToLearningBucket = async (req, res) => {
 
   try {
     const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ message: 'User not found' });
+    if (!user) return res.status(404).json({ message: 'User not found' } );
 
     // Check if the course is already in the learning bucket
     const courseExists = user.courses.find(course => course.courseId.toString() === courseId);
@@ -300,3 +301,39 @@ exports.getUserSkills = async (req, res) => {
   
 
 
+
+ 
+  
+  // ... (your other controller functions: addCourseToLearningBucket, etc.) ...
+   
+  exports.getRecommendations = async (req, res) => {
+    try {
+      const employeeId = req.params.employeeId;
+  
+      // --- Call the Python Recommendation Script ---
+      let options = {
+        mode: 'text',
+        pythonPath: 'python', // Path to your Python executable
+        pythonOptions: ['-u'], // Unbuffered output
+        scriptPath: '',
+        args: [employeeId]
+      };
+  
+      PythonShell.run('hybridModel.py', options, function (err, results) {
+        if (err) {
+          console.error('Error running Python script:', err);
+          return res.status(500).json({ error: 'Failed to get recommendations' });
+        }
+  
+        // Parse the JSON output from the Python script
+        let recommendations = JSON.parse(results[0])
+        console.log("Recommendations from Python:", recommendations);
+  
+        res.json(recommendations); // Send recommendations directly as JSON
+      });
+  
+    } catch (error) {
+      console.error('Error in /recommendations endpoint:', error);
+      res.status(500).json({ error: 'Failed to get recommendations' });
+    }
+  };

@@ -1,5 +1,6 @@
 const User = require('../models/User'); // Ensure to import your User model
 const Department = require('../models/Department');
+const Course = require('../models/Course');
 
 // Get all departments
 const getDepartments = async (req, res) => {
@@ -122,10 +123,13 @@ const getEmployeeDetails = async (req, res) => {
     const { id } = req.params;
     try {
         const employee = await User.findById(id)
-            .populate('department', 'name')
-            .populate('designation')
-            .populate('courses') 
-            .populate('skills');
+            .populate('department', 'name')  // Populating department name
+            .populate('designation')         // Populating designation
+            .populate('skills')              // Populating skills
+            .populate({
+                path: 'courses.courseId',    // Populating courses
+                select: 'course certificateType level',  // Selecting course name and certificateType
+            });
 
         if (!employee) return res.status(404).json({ message: 'Employee not found' });
 
@@ -135,6 +139,7 @@ const getEmployeeDetails = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
 
 // Admin: Approve Certification
 const approveCertification = async (req, res) => {

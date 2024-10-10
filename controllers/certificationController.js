@@ -6,7 +6,7 @@ exports.getUserCertifications = async (req, res) => {
     try {
       const userId = req.user.id; // Assume user ID is in the token payload
       const certifications = await Certification.find({ userId })
-        .populate('courseId', 'course') // Populate the courseId field, selecting only the 'course' field
+        .populate('courseId')
         .exec();
   
       res.status(200).json(certifications);

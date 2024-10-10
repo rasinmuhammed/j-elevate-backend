@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const User = require('../models/User'); // Import User model
 const bcrypt = require('bcryptjs');
+const { getLeaderboard } = require('../controllers/leaderboardController');
 const { createObjectCsvWriter } = require('csv-writer');
 const {
   getDepartments,
@@ -42,6 +43,9 @@ router.post('/add-role', addRole);
 router.put('/edit-department/:id', editDepartment);
 router.put('/edit-role/:departmentId/:roleIndex', editRole);
 
+
+// GET department leaderboard
+router.get('/leaderboard', getLeaderboard);
 
 
 // Route for Bulk-upload

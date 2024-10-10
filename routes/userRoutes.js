@@ -21,5 +21,6 @@ router.post('/submit/:courseId', userController.submitToSupervisor);
 router.get('/certifications', certificationController.getUserCertifications);
 // Fetch the user profile information
 router.get('/profile', userController.getUserProfile);
+router.get('/recommendations/:employeeId', userController.getRecommendations);
 
 module.exports = router;
